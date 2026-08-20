@@ -56,10 +56,12 @@ ENTITY_TYPES = {
         "singular": "Risco",
         "plural": "Riscos / Issues",
         "icon": "⚠️",
-        "category_label": "Severidade",
+        "category_label": "Criticidade de Impacto",
         "category_options": ["Crítica", "Alta", "Média", "Baixa"],
         "metric_label_default": "Exposição",
         "has_due_date": True,
+        "has_impact_fields": True,
+        "progress_status_options": ["Não iniciado", "Em andamento", "Concluído", "Atrasado", "Cancelado"],
     },
 }
 
@@ -76,6 +78,15 @@ class Item(db.Model):
     metric_label = db.Column(db.String(80), default="")
     metric_value = db.Column(db.Float, nullable=True)
     metric_target = db.Column(db.Float, nullable=True)
+    company = db.Column(db.String(120), default="")
+    technology = db.Column(db.String(120), default="")
+    impact_area = db.Column(db.String(120), default="")
+    demand_date = db.Column(db.Date, nullable=True)
+    start_date = db.Column(db.Date, nullable=True)
+    completion_date = db.Column(db.Date, nullable=True)
+    action_plan = db.Column(db.Text, default="")
+    attention_note = db.Column(db.Text, default="")
+    progress_status = db.Column(db.String(30), default="")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -90,7 +101,15 @@ class Item(db.Model):
 
     @property
     def is_overdue(self):
+        if self.progress_status in ("Concluído", "Cancelado"):
+            return False
         return bool(self.due_date and self.due_date < date.today() and self.status != "green")
+
+    @property
+    def completed_late(self):
+        if not (self.completion_date and self.due_date):
+            return False
+        return self.completion_date > self.due_date
 
 
 class StatusHistory(db.Model):
@@ -210,6 +229,15 @@ def new_item(entity_type):
             metric_label=request.form.get("metric_label", "").strip() or meta["metric_label_default"],
             metric_value=parse_float(request.form.get("metric_value")),
             metric_target=parse_float(request.form.get("metric_target")),
+            company=request.form.get("company", "").strip(),
+            technology=request.form.get("technology", "").strip(),
+            impact_area=request.form.get("impact_area", "").strip(),
+            demand_date=parse_date(request.form.get("demand_date")),
+            start_date=parse_date(request.form.get("start_date")),
+            completion_date=parse_date(request.form.get("completion_date")),
+            action_plan=request.form.get("action_plan", "").strip(),
+            attention_note=request.form.get("attention_note", "").strip(),
+            progress_status=request.form.get("progress_status", "").strip(),
         )
         if not item.name:
             flash("Nome é obrigatório.", "error")
@@ -254,6 +282,15 @@ def edit_item(entity_type, item_id):
         item.metric_label = request.form.get("metric_label", "").strip() or meta["metric_label_default"]
         item.metric_value = parse_float(request.form.get("metric_value"))
         item.metric_target = parse_float(request.form.get("metric_target"))
+        item.company = request.form.get("company", "").strip()
+        item.technology = request.form.get("technology", "").strip()
+        item.impact_area = request.form.get("impact_area", "").strip()
+        item.demand_date = parse_date(request.form.get("demand_date"))
+        item.start_date = parse_date(request.form.get("start_date"))
+        item.completion_date = parse_date(request.form.get("completion_date"))
+        item.action_plan = request.form.get("action_plan", "").strip()
+        item.attention_note = request.form.get("attention_note", "").strip()
+        item.progress_status = request.form.get("progress_status", "").strip()
         if not item.name:
             flash("Nome é obrigatório.", "error")
             return render_template("form.html", entity_type=entity_type, meta=meta, item=item, mode="edit")
