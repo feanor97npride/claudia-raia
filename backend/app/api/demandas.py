@@ -1,8 +1,9 @@
-from datetime import date
+from datetime import date, datetime
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, send_file
 
 from .. import constants as c
+from ..exports import XLSX_MIMETYPE, build_listing, build_template
 from ..extensions import db
 from ..imports import find_by_nome, find_usuario, get, parse_date_flex, read_rows, resolve_enum
 from ..models import Demanda, Projeto, Sistema, log_status
@@ -235,3 +236,53 @@ def kanban_batch():
             item.ordem_kanban = index
     db.session.commit()
     return jsonify({"ok": True})
+
+
+DEMANDA_TEMPLATE_HEADERS = ["Título", "Descrição", "Prioridade", "Responsável", "Projeto", "Sistema", "Prazo", "Status"]
+DEMANDA_TEMPLATE_EXAMPLE = [
+    "Corrigir integração CRM x ERP", "Erro ao sincronizar pedidos entre sistemas", "Crítica",
+    "nome.sobrenome@empresa.com", "Migração ERP SAP S/4HANA", "SAP ECC (Produção)", "31/12/2026", "Em Andamento",
+]
+
+
+@bp.get("/modelo-planilha")
+def modelo_planilha():
+    """Downloads a blank .xlsx with the exact columns import-planilha expects."""
+    buf = build_template(
+        DEMANDA_TEMPLATE_HEADERS,
+        example_row=DEMANDA_TEMPLATE_EXAMPLE,
+        note=(
+            "Modelo de importação de Demandas — preencha uma linha por demanda "
+            "(a linha abaixo é só um exemplo, pode apagar). "
+            "Responsável precisa já existir em Usuários (nome ou e-mail). "
+            "Projeto/Sistema/Status são opcionais."
+        ),
+    )
+    return send_file(
+        buf, as_attachment=True, download_name="modelo-demandas.xlsx", mimetype=XLSX_MIMETYPE
+    )
+
+
+@bp.get("/exportar")
+def exportar():
+    """Downloads the current list of demandas as .xlsx."""
+    recalcular_atrasos()
+    items = Demanda.query.order_by(Demanda.status_kanban, Demanda.ordem_kanban).all()
+    headers = ["Título", "Status", "Prioridade", "Responsável", "Projeto", "Sistema", "Prazo", "Conclusão", "Atualizado em"]
+    rows = [
+        [
+            d.titulo,
+            c.STATUS_KANBAN_LABELS.get(d.status_kanban, d.status_kanban),
+            c.PRIORIDADE_LABELS.get(d.prioridade, d.prioridade),
+            d.responsavel.nome if d.responsavel else "",
+            d.projeto.nome if d.projeto else "",
+            d.sistema.nome if d.sistema else "",
+            d.data_prazo.strftime("%d/%m/%Y") if d.data_prazo else "",
+            d.data_conclusao.strftime("%d/%m/%Y") if d.data_conclusao else "",
+            d.atualizado_em.strftime("%d/%m/%Y %H:%M") if d.atualizado_em else "",
+        ]
+        for d in items
+    ]
+    buf = build_listing(headers, rows)
+    fname = f"demandas-{datetime.utcnow().strftime('%Y%m%d')}.xlsx"
+    return send_file(buf, as_attachment=True, download_name=fname, mimetype=XLSX_MIMETYPE)

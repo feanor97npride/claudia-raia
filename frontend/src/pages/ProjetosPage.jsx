@@ -3,6 +3,7 @@ import { api } from '../api/client'
 import { useMeta } from '../hooks/useMeta'
 import { useToast } from '../hooks/useToast'
 import { RagBadge } from '../components/Badges'
+import DownloadLink from '../components/DownloadLink'
 import ImportButton from '../components/ImportButton'
 import Modal from '../components/Modal'
 
@@ -54,6 +55,8 @@ export default function ProjetosPage() {
           <div className="subtitle">Fase, criticidade e status RAG dos projetos em andamento.</div>
         </div>
         <div className="actions">
+          <DownloadLink path="/projetos/exportar" label="⇩ Exportar lista" />
+          <DownloadLink path="/projetos/modelo-planilha" label="⇩ Baixar modelo" />
           <ImportButton
             endpoint="/projetos/import-planilha"
             label="Importar planilha"

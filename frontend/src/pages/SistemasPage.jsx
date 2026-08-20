@@ -3,6 +3,7 @@ import { api } from '../api/client'
 import { useMeta } from '../hooks/useMeta'
 import { useToast } from '../hooks/useToast'
 import { RagBadge } from '../components/Badges'
+import DownloadLink from '../components/DownloadLink'
 import ImportButton from '../components/ImportButton'
 import Modal from '../components/Modal'
 
@@ -54,6 +55,7 @@ export default function SistemasPage() {
           <div className="subtitle">Catálogo de aplicações corporativas — base do inventário e das demandas.</div>
         </div>
         <div className="actions">
+          <DownloadLink path="/sistemas/modelo-planilha" label="⇩ Baixar modelo" />
           <ImportButton
             endpoint="/sistemas/import-planilha"
             label="Importar planilha"

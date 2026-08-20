@@ -3,6 +3,7 @@ import { api } from '../api/client'
 import { useMeta } from '../hooks/useMeta'
 import { useToast } from '../hooks/useToast'
 import { KanbanBadge, PriorityBadge } from '../components/Badges'
+import DownloadLink from '../components/DownloadLink'
 import ImportButton from '../components/ImportButton'
 import KanbanBoard from '../components/KanbanBoard'
 import Modal from '../components/Modal'
@@ -90,6 +91,8 @@ export default function DemandasPage() {
             <button className={view === 'kanban' ? 'active' : ''} onClick={() => setView('kanban')}>Kanban</button>
             <button className={view === 'lista' ? 'active' : ''} onClick={() => setView('lista')}>Lista</button>
           </div>
+          <DownloadLink path="/demandas/exportar" label="⇩ Exportar lista" />
+          <DownloadLink path="/demandas/modelo-planilha" label="⇩ Baixar modelo" />
           <ImportButton
             endpoint="/demandas/import-planilha"
             label="Importar planilha"

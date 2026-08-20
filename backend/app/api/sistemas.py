@@ -1,6 +1,7 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, send_file
 
 from .. import constants as c
+from ..exports import XLSX_MIMETYPE, build_template
 from ..extensions import db
 from ..imports import find_usuario, get, parse_date_flex, read_rows, resolve_enum
 from ..models import Sistema, log_status
@@ -165,3 +166,29 @@ def import_planilha():
         db.session.rollback()
 
     return jsonify({"criados": criados, "erros": erros, "avisos": avisos})
+
+
+SISTEMA_TEMPLATE_HEADERS = [
+    "Nome", "Descrição", "Categoria", "Criticidade", "Ambiente", "Status RAG", "Fornecedor", "Responsável", "Fim de Suporte",
+]
+SISTEMA_TEMPLATE_EXAMPLE = [
+    "SAP ECC (Produção)", "Ambiente produtivo SAP legado", "Aplicação", "Crítica", "Produção", "Verde",
+    "SAP", "nome.sobrenome@empresa.com", "31/12/2027",
+]
+
+
+@bp.get("/modelo-planilha")
+def modelo_planilha():
+    """Downloads a blank .xlsx with the exact columns import-planilha expects."""
+    buf = build_template(
+        SISTEMA_TEMPLATE_HEADERS,
+        example_row=SISTEMA_TEMPLATE_EXAMPLE,
+        note=(
+            "Modelo de importação de Sistemas — preencha uma linha por sistema "
+            "(a linha abaixo é só um exemplo, pode apagar). "
+            "Responsável precisa já existir em Usuários (nome ou e-mail)."
+        ),
+    )
+    return send_file(
+        buf, as_attachment=True, download_name="modelo-sistemas.xlsx", mimetype=XLSX_MIMETYPE
+    )

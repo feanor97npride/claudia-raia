@@ -1,6 +1,9 @@
-from flask import Blueprint, jsonify, request
+from datetime import datetime
+
+from flask import Blueprint, jsonify, request, send_file
 
 from .. import constants as c
+from ..exports import XLSX_MIMETYPE, build_listing, build_template
 from ..extensions import db
 from ..imports import find_usuario, get, parse_date_flex, read_rows, resolve_enum
 from ..models import Area, Projeto, Sistema, log_status
@@ -160,3 +163,57 @@ def import_planilha():
         db.session.rollback()
 
     return jsonify({"criados": criados, "erros": erros, "avisos": avisos})
+
+
+PROJETO_TEMPLATE_HEADERS = [
+    "Nome", "Descrição", "Fase", "Criticidade", "Status RAG", "Responsável", "Data Início", "Data Fim Prevista",
+]
+PROJETO_TEMPLATE_EXAMPLE = [
+    "Migração ERP SAP S/4HANA", "Migração do ambiente SAP ECC para S/4HANA", "Execução", "Alta", "Âmbar",
+    "nome.sobrenome@empresa.com", "01/03/2026", "31/12/2026",
+]
+
+
+@bp.get("/modelo-planilha")
+def modelo_planilha():
+    """Downloads a blank .xlsx with the exact columns import-planilha expects."""
+    buf = build_template(
+        PROJETO_TEMPLATE_HEADERS,
+        example_row=PROJETO_TEMPLATE_EXAMPLE,
+        note=(
+            "Modelo de importação de Projetos — preencha uma linha por projeto "
+            "(a linha abaixo é só um exemplo, pode apagar). "
+            "Responsável precisa já existir em Usuários (nome ou e-mail)."
+        ),
+    )
+    return send_file(
+        buf, as_attachment=True, download_name="modelo-projetos.xlsx", mimetype=XLSX_MIMETYPE
+    )
+
+
+@bp.get("/exportar")
+def exportar():
+    """Downloads the current list of projetos as .xlsx."""
+    items = Projeto.query.order_by(Projeto.nome).all()
+    headers = [
+        "Nome", "Fase", "Criticidade", "Status RAG", "Responsável", "Áreas impactadas",
+        "Sistemas envolvidos", "Início", "Fim previsto", "Total de demandas",
+    ]
+    rows = [
+        [
+            p.nome,
+            c.FASE_LABELS.get(p.fase, p.fase),
+            c.CRITICIDADE_LABELS.get(p.criticidade, p.criticidade),
+            c.STATUS_RAG_LABELS.get(p.status_rag, p.status_rag),
+            p.owner.nome if p.owner else "",
+            ", ".join(a.nome for a in p.areas),
+            ", ".join(s.nome for s in p.sistemas),
+            p.data_inicio.strftime("%d/%m/%Y") if p.data_inicio else "",
+            p.data_fim_prevista.strftime("%d/%m/%Y") if p.data_fim_prevista else "",
+            len(p.demandas),
+        ]
+        for p in items
+    ]
+    buf = build_listing(headers, rows)
+    fname = f"projetos-{datetime.utcnow().strftime('%Y%m%d')}.xlsx"
+    return send_file(buf, as_attachment=True, download_name=fname, mimetype=XLSX_MIMETYPE)
