@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}Painel — RAG Tracker{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Painel Geral</h1>
+    <p>Status consolidado (RAG) de {{ total_items }} itens em sistemas corporativos de TI.</p>
+  </div>
+  <div style="display:flex; gap:8px;">
+    <a class="btn secondary" href="{{ url_for('export_all_excel') }}">⬇️ Excel</a>
+    <a class="btn secondary" href="{{ url_for('export_all_pdf') }}">⬇️ PDF</a>
+  </div>
+</div>
+
+<div class="totals-row">
+  <div class="total-tile green">
+    <div class="num">{{ total_counts.green }}</div>
+    <div class="label">🟢 Verde — no prazo / saudável</div>
+  </div>
+  <div class="total-tile amber">
+    <div class="num">{{ total_counts.amber }}</div>
+    <div class="label">🟡 Amarelo — atenção</div>
+  </div>
+  <div class="total-tile red">
+    <div class="num">{{ total_counts.red }}</div>
+    <div class="label">🔴 Vermelho — crítico</div>
+  </div>
+</div>
+
+<div class="summary-grid">
+  {% for key, meta in ENTITY_TYPES.items() %}
+  {% set c = summary[key] %}
+  {% set total = c.green + c.amber + c.red %}
+  <div class="summary-card">
+    <div class="title">
+      <span>{{ meta.icon }} {{ meta.plural }}</span>
+      <a href="{{ url_for('list_items', entity_type=key) }}">ver todos →</a>
+    </div>
+    {% if total > 0 %}
+    <div class="summary-bar">
+      <span class="green" style="width: {{ (c.green / total * 100) | round(1) }}%"></span>
+      <span class="amber" style="width: {{ (c.amber / total * 100) | round(1) }}%"></span>
+      <span class="red" style="width: {{ (c.red / total * 100) | round(1) }}%"></span>
+    </div>
+    <div class="summary-counts">
+      <span><strong>{{ c.green }}</strong> verde</span>
+      <span><strong>{{ c.amber }}</strong> amarelo</span>
+      <span><strong>{{ c.red }}</strong> vermelho</span>
+    </div>
+    {% else %}
+    <p style="color:var(--text-muted); font-size:13px; margin:0;">Nenhum item cadastrado ainda.</p>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+
+{% if total_items > 0 %}
+<div class="attention-section">
+  <h2>📈 Tendência de status (últimos {{ trend_days }} dias)</h2>
+  <div class="card">{{ trend_svg | safe }}</div>
+</div>
+{% endif %}
+
+{% if red_items %}
+<div class="attention-section">
+  <h2>🔴 Requer atenção imediata</h2>
+  {% for it in red_items %}
+  <a href="{{ url_for('item_detail', entity_type=it.entity_type, item_id=it.id) }}" style="text-decoration:none;">
+    <div class="item-row">
+      <span class="meta-icon">{{ it.meta.icon }}</span>
+      <span class="name" style="color:var(--text)">{{ it.name }}</span>
+      <span class="sub">{{ it.meta.singular }} · Responsável: {{ it.owner or '—' }}</span>
+      {{ m.status_badge(it.status) }}
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if amber_items %}
+<div class="attention-section">
+  <h2>🟡 Em observação</h2>
+  {% for it in amber_items %}
+  <a href="{{ url_for('item_detail', entity_type=it.entity_type, item_id=it.id) }}" style="text-decoration:none;">
+    <div class="item-row">
+      <span class="meta-icon">{{ it.meta.icon }}</span>
+      <span class="name" style="color:var(--text)">{{ it.name }}</span>
+      <span class="sub">{{ it.meta.singular }} · Responsável: {{ it.owner or '—' }}</span>
+      {{ m.status_badge(it.status) }}
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if recent_history %}
+<div class="attention-section">
+  <h2>🕒 Atualizações recentes</h2>
+  <table class="table">
+    <thead>
+      <tr><th>Item</th><th>Novo status</th><th>Nota</th><th>Por</th><th>Quando</th></tr>
+    </thead>
+    <tbody>
+      {% for h in recent_history %}
+      <tr>
+        <td><a href="{{ url_for('item_detail', entity_type=h.item.entity_type, item_id=h.item.id) }}">{{ h.item.meta.icon }} {{ h.item.name }}</a></td>
+        <td>{{ m.status_badge(h.status) }}</td>
+        <td>{{ h.note or '—' }}</td>
+        <td>{{ h.changed_by or '—' }}</td>
+        <td>{{ h.changed_at.strftime('%d/%m/%Y %H:%M') }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% if total_items == 0 %}
+<div class="empty-state card">
+  <div class="big">🚦</div>
+  <p>Nenhum item cadastrado ainda. Comece adicionando um projeto, sistema, KPI ou risco pelo menu lateral.</p>
+</div>
+{% endif %}
+{% endblock %}

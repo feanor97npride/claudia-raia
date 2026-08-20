@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar' if mode == 'edit' else 'Novo' }} {{ meta.singular }} — RAG Tracker{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>{{ '✏️ Editar' if mode == 'edit' else '+ Novo' }} {{ meta.singular }}</h1>
+  </div>
+</div>
+
+<form method="post" class="card">
+  <div class="form-grid">
+    <div class="field full">
+      <label>Nome *</label>
+      <input type="text" name="name" required value="{{ item.name if item else '' }}">
+    </div>
+
+    <div class="field full">
+      <label>Descrição</label>
+      <textarea name="description">{{ item.description if item else '' }}</textarea>
+    </div>
+
+    <div class="field">
+      <label>Responsável</label>
+      <input type="text" name="owner" value="{{ item.owner if item else '' }}" placeholder="Nome ou equipe">
+    </div>
+
+    <div class="field">
+      <label>{{ meta.category_label }}</label>
+      <select name="category">
+        <option value="">—</option>
+        {% for opt in meta.category_options %}
+        <option value="{{ opt }}" {{ 'selected' if item and item.category == opt }}>{{ opt }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    {% if meta.has_due_date %}
+    <div class="field">
+      <label>Prazo</label>
+      <input type="date" name="due_date" value="{{ item.due_date.isoformat() if item and item.due_date else '' }}">
+    </div>
+    {% endif %}
+
+    <div class="field">
+      <label>Rótulo da métrica</label>
+      <input type="text" name="metric_label" value="{{ item.metric_label if item and item.metric_label else meta.metric_label_default }}">
+    </div>
+
+    <div class="field">
+      <label>Valor atual</label>
+      <input type="text" name="metric_value" value="{{ item.metric_value if item and item.metric_value is not none else '' }}" placeholder="Ex: 72">
+    </div>
+
+    <div class="field">
+      <label>Meta / alvo</label>
+      <input type="text" name="metric_target" value="{{ item.metric_target if item and item.metric_target is not none else '' }}" placeholder="Ex: 100">
+    </div>
+
+    <div class="field full">
+      <label>Status RAG</label>
+      <div class="status-options">
+        <label class="green"><input type="radio" name="status" value="green" {{ 'checked' if not item or item.status == 'green' }}> 🟢 Verde</label>
+        <label class="amber"><input type="radio" name="status" value="amber" {{ 'checked' if item and item.status == 'amber' }}> 🟡 Amarelo</label>
+        <label class="red"><input type="radio" name="status" value="red" {{ 'checked' if item and item.status == 'red' }}> 🔴 Vermelho</label>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <button type="submit" class="btn">{{ 'Salvar alterações' if mode == 'edit' else 'Criar ' + meta.singular }}</button>
+    <a class="btn secondary" href="{{ url_for('list_items', entity_type=entity_type) if mode == 'new' else url_for('item_detail', entity_type=entity_type, item_id=item.id) }}">Cancelar</a>
+  </div>
+</form>
+{% endblock %}

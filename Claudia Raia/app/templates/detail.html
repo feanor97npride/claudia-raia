@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}{{ item.name }} — RAG Tracker{% endblock %}
+{% block content %}
+<div class="detail-header">
+  <div>
+    <p style="margin:0 0 6px; color:var(--text-muted); font-size:13px;">{{ meta.icon }} {{ meta.singular }}</p>
+    <h1 style="margin:0 0 8px;">{{ item.name }}</h1>
+    {{ m.status_badge(item.status) }}
+  </div>
+  <div style="display:flex; gap:8px;">
+    <a class="btn secondary" href="{{ url_for('edit_item', entity_type=entity_type, item_id=item.id) }}">✏️ Editar</a>
+    <form method="post" action="{{ url_for('delete_item', entity_type=entity_type, item_id=item.id) }}" onsubmit="return confirm('Excluir este item? Essa ação não pode ser desfeita.');">
+      <button type="submit" class="btn danger">🗑️ Excluir</button>
+    </form>
+  </div>
+</div>
+
+<div class="detail-grid">
+  <div>
+    <div class="card" style="margin-bottom:20px;">
+      <h3 style="margin-top:0;">Detalhes</h3>
+      <div class="info-list">
+        <div class="row"><span class="k">Descrição</span><span>{{ item.description or '—' }}</span></div>
+        <div class="row"><span class="k">Responsável</span><span>{{ item.owner or '—' }}</span></div>
+        <div class="row"><span class="k">{{ meta.category_label }}</span><span>{{ item.category or '—' }}</span></div>
+        {% if meta.has_due_date %}
+        <div class="row"><span class="k">Prazo</span><span>{% if item.due_date %}{{ item.due_date.strftime('%d/%m/%Y') }}{% if item.is_overdue %} <span style="color:var(--red); font-weight:600;">(atrasado)</span>{% endif %}{% else %}—{% endif %}</span></div>
+        {% endif %}
+        <div class="row"><span class="k">Criado em</span><span>{{ item.created_at.strftime('%d/%m/%Y %H:%M') }}</span></div>
+        <div class="row"><span class="k">Última atualização</span><span>{{ item.updated_at.strftime('%d/%m/%Y %H:%M') }}</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0;">Atualizar status</h3>
+      <form method="post" action="{{ url_for('update_status', entity_type=entity_type, item_id=item.id) }}">
+        <div class="form-grid" style="max-width:none;">
+          <div class="field full">
+            <div class="status-options">
+              <label class="green"><input type="radio" name="status" value="green" {{ 'checked' if item.status == 'green' }}> 🟢 Verde</label>
+              <label class="amber"><input type="radio" name="status" value="amber" {{ 'checked' if item.status == 'amber' }}> 🟡 Amarelo</label>
+              <label class="red"><input type="radio" name="status" value="red" {{ 'checked' if item.status == 'red' }}> 🔴 Vermelho</label>
+            </div>
+          </div>
+          <div class="field">
+            <label>Atualizado por</label>
+            <input type="text" name="changed_by" value="{{ item.owner or '' }}" placeholder="Seu nome">
+          </div>
+          <div class="field full">
+            <label>Nota / justificativa</label>
+            <textarea name="note" placeholder="O que mudou desde a última atualização?"></textarea>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn">Registrar atualização</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div>
+    {% if item.metric_value is not none %}
+    <div class="card" style="margin-bottom:20px;">
+      <div class="metric-box">
+        <div class="value">{{ item.metric_value }}{% if item.metric_target is not none %}<span style="color:var(--text-muted); font-size:16px;"> / {{ item.metric_target }}</span>{% endif %}</div>
+        <div class="label">{{ item.metric_label or meta.metric_label_default }}</div>
+        {% if item.metric_target and item.metric_target > 0 %}
+        <div class="progress-track">
+          <div class="fill" style="width: {{ [(item.metric_value / item.metric_target * 100), 100] | min | round(1) }}%;"></div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if status_bar_svg %}
+    <div class="card" style="margin-bottom:20px;">
+      <h3 style="margin-top:0;">Linha do tempo de status</h3>
+      {{ status_bar_svg | safe }}
+    </div>
+    {% endif %}
+
+    <div class="card">
+      <h3 style="margin-top:0;">Histórico de status</h3>
+      {% if item.history %}
+      <ul class="timeline">
+        {% for h in item.history %}
+        <li>
+          <div class="dot-col">{{ m.status_dot(h.status) }}</div>
+          <div class="tcontent">
+            <div class="tnote">{{ h.note or 'Status alterado para ' + h.status }}</div>
+            <div class="tmeta">{{ h.changed_by or '—' }} · {{ h.changed_at.strftime('%d/%m/%Y %H:%M') }}</div>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p style="color:var(--text-muted); font-size:13px;">Sem histórico ainda.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

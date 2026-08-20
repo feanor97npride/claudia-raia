@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% import "_macros.html" as m %}
+{% block title %}{{ meta.plural }} — RAG Tracker{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>{{ meta.icon }} {{ meta.plural }}</h1>
+    <p>{{ items | length }} item(ns) {% if status_filter %}com status filtrado{% endif %}</p>
+  </div>
+  <div style="display:flex; gap:8px;">
+    <a class="btn secondary" href="{{ url_for('export_type_excel', entity_type=entity_type) }}">⬇️ Excel</a>
+    <a class="btn secondary" href="{{ url_for('export_type_pdf', entity_type=entity_type) }}">⬇️ PDF</a>
+    <a class="btn" href="{{ url_for('new_item', entity_type=entity_type) }}">+ Novo {{ meta.singular }}</a>
+  </div>
+</div>
+
+{% if items %}
+<div class="card" style="margin-bottom:20px;">
+  <h3 style="margin:0 0 10px; font-size:14px;">📈 Tendência de status (últimos 30 dias)</h3>
+  {{ trend_svg | safe }}
+</div>
+{% endif %}
+
+<div class="filters">
+  <a href="{{ url_for('list_items', entity_type=entity_type) }}" class="{{ 'active' if not status_filter }}">Todos</a>
+  <a href="{{ url_for('list_items', entity_type=entity_type, status='red') }}" class="{{ 'active' if status_filter == 'red' }}">🔴 Vermelho</a>
+  <a href="{{ url_for('list_items', entity_type=entity_type, status='amber') }}" class="{{ 'active' if status_filter == 'amber' }}">🟡 Amarelo</a>
+  <a href="{{ url_for('list_items', entity_type=entity_type, status='green') }}" class="{{ 'active' if status_filter == 'green' }}">🟢 Verde</a>
+</div>
+
+{% if items %}
+<table class="table">
+  <thead>
+    <tr>
+      <th>Status</th>
+      <th>Nome</th>
+      <th>{{ meta.category_label }}</th>
+      <th>Responsável</th>
+      <th>{{ items[0].metric_label or meta.metric_label_default }}</th>
+      {% if meta.has_due_date %}<th>Prazo</th>{% endif %}
+      <th>Atualizado</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for it in items %}
+    <tr onclick="window.location='{{ url_for('item_detail', entity_type=entity_type, item_id=it.id) }}'" style="cursor:pointer;">
+      <td>{{ m.status_badge(it.status) }}</td>
+      <td><strong>{{ it.name }}</strong></td>
+      <td>{{ it.category or '—' }}</td>
+      <td>{{ it.owner or '—' }}</td>
+      <td>
+        {% if it.metric_value is not none %}
+          {{ it.metric_value }}{% if it.metric_target is not none %} / {{ it.metric_target }}{% endif %}
+        {% else %}—{% endif %}
+      </td>
+      {% if meta.has_due_date %}
+      <td>{% if it.due_date %}{{ it.due_date.strftime('%d/%m/%Y') }}{% if it.is_overdue %} <span style="color:var(--red)">(atrasado)</span>{% endif %}{% else %}—{% endif %}</td>
+      {% endif %}
+      <td>{{ it.updated_at.strftime('%d/%m/%Y %H:%M') }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty-state card">
+  <div class="big">{{ meta.icon }}</div>
+  <p>Nenhum {{ meta.singular.lower() }} cadastrado ainda.</p>
+  <a class="btn" href="{{ url_for('new_item', entity_type=entity_type) }}">+ Novo {{ meta.singular }}</a>
+</div>
+{% endif %}
+{% endblock %}

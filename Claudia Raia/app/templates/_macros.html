@@ -1,0 +1,8 @@
+{% macro status_badge(status) -%}
+<span class="badge {{ status }}"><span class="rag-dot {{ status }}"></span>
+{{ {'green': 'Verde', 'amber': 'Amarelo', 'red': 'Vermelho'}[status] }}</span>
+{%- endmacro %}
+
+{% macro status_dot(status) -%}
+<span class="rag-dot {{ status }}"></span>
+{%- endmacro %}
