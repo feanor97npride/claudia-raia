@@ -13,8 +13,10 @@ separadamente e foi validada antes desta implementação.
 ## Estrutura
 
 ```
+api/index.py        entrypoint serverless do backend (função Python da Vercel)
 backend/    API Flask + SQLAlchemy (REST JSON em /api/*)
 frontend/   SPA React (Vite)
+requirements.txt    dependências Python, na raiz — é onde a Vercel procura para a função serverless
 Claudia Raia/app/   protótipo anterior (RAG Tracker em Flask + Jinja), mantido como referência
 ```
 
@@ -23,7 +25,7 @@ Claudia Raia/app/   protótipo anterior (RAG Tracker em Flask + Jinja), mantido 
 ```bash
 cd backend
 python3 -m venv .venv
-./.venv/bin/pip install -r requirements.txt
+./.venv/bin/pip install -r ../requirements.txt
 ./.venv/bin/python run.py    # http://127.0.0.1:5001 — cria o schema e popula dados de exemplo
 ```
 
@@ -41,9 +43,11 @@ npm run dev    # http://127.0.0.1:5173 — proxy de /api para o backend em :5001
 
 ## Deploy (Vercel)
 
-O `vercel.json` na raiz builda o backend como uma função Python (`backend/index.py`, via
-`@vercel/python`) e o frontend como site estático (`frontend/`, via `@vercel/static-build`),
-servidos no mesmo domínio: `/api/*` cai na função Flask, o restante serve o SPA React.
+O `vercel.json` na raiz builda o frontend via `buildCommand`/`outputDirectory` (site estático de
+`frontend/dist`) e a Vercel detecta `api/index.py` automaticamente como função Python serverless
+(convenção de pasta `api/`, sem precisar declarar em `builds`). Um rewrite manda `/api/*` para essa
+função — o Flask por trás lê o path original e resolve as rotas internamente — e outro serve
+`index.html` para qualquer outro caminho (fallback do SPA/React Router).
 
 Passo pendente (só pode ser feito por quem tem acesso ao painel do Vercel do projeto):
 
