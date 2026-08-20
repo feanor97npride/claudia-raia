@@ -1,14 +1,18 @@
 {
   "builds": [
     {
-      "src": "Claudia Raia/app/app.py",
+      "src": "backend/index.py",
       "use": "@vercel/python"
+    },
+    {
+      "src": "frontend/package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "dist" }
     }
   ],
   "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "Claudia Raia/app/app.py"
-    }
+    { "src": "/api/(.*)", "dest": "backend/index.py" },
+    { "handle": "filesystem" },
+    { "src": "/(.*)", "dest": "frontend/dist/index.html" }
   ]
 }

@@ -39,6 +39,24 @@ npm install
 npm run dev    # http://127.0.0.1:5173 — proxy de /api para o backend em :5001
 ```
 
+## Deploy (Vercel)
+
+O `vercel.json` na raiz builda o backend como uma função Python (`backend/index.py`, via
+`@vercel/python`) e o frontend como site estático (`frontend/`, via `@vercel/static-build`),
+servidos no mesmo domínio: `/api/*` cai na função Flask, o restante serve o SPA React.
+
+Passo pendente (só pode ser feito por quem tem acesso ao painel do Vercel do projeto):
+
+1. Em **Storage → Postgres**, crie um banco Postgres e conecte-o ao projeto `claudia-raia`. Isso
+   injeta automaticamente uma variável `POSTGRES_URL` (ou `DATABASE_URL`, dependendo da
+   integração) nas env vars do projeto — o backend já lê as duas.
+2. Faça um redeploy (ou aguarde o próximo push) para as env vars entrarem em vigor.
+3. As tabelas são criadas automaticamente no primeiro request (`db.create_all()` no cold start).
+   Não há seed automático em produção — o banco começa vazio.
+
+Sem essa variável configurada, o backend cai de volta para SQLite em `/tmp`, que **não persiste**
+entre deploys serverless — funciona para smoke test, não para uso real.
+
 ## Notas de arquitetura
 
 - A coluna **Em Atraso** do Kanban é recalculada a cada carga da lista de demandas (promove
