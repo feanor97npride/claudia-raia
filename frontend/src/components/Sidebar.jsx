@@ -8,6 +8,7 @@ const NAV = [
   { to: '/sistemas', label: 'Sistemas', icon: '▣' },
   { to: '/inventario', label: 'Inventário', icon: '▦' },
   { to: '/documentos', label: 'Documentos', icon: '▥' },
+  { to: '/usuarios', label: 'Usuários', icon: '◍' },
 ]
 
 export default function Sidebar() {

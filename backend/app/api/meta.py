@@ -40,5 +40,7 @@ def meta():
             "status_aprovacao_doc": c.STATUS_APROVACAO_DOC,
             "status_aprovacao_doc_labels": c.STATUS_APROVACAO_DOC_LABELS,
             "provedores_assinatura": c.PROVEDORES_ASSINATURA,
+            "papeis_usuario": c.PAPEIS_USUARIO,
+            "papel_usuario_labels": c.PAPEL_USUARIO_LABELS,
         },
     })

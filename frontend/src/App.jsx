@@ -8,6 +8,7 @@ import ProjetosPage from './pages/ProjetosPage'
 import SistemasPage from './pages/SistemasPage'
 import InventarioPage from './pages/InventarioPage'
 import DocumentosPage from './pages/DocumentosPage'
+import UsuariosPage from './pages/UsuariosPage'
 
 function AppShell() {
   const { meta, error } = useMeta()
@@ -26,6 +27,7 @@ function AppShell() {
             <Route path="/sistemas" element={<SistemasPage />} />
             <Route path="/inventario" element={<InventarioPage />} />
             <Route path="/documentos" element={<DocumentosPage />} />
+            <Route path="/usuarios" element={<UsuariosPage />} />
           </Routes>
         )}
       </main>

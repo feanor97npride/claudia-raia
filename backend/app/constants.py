@@ -25,6 +25,10 @@ FASE_LABELS = {
 }
 
 PAPEIS_USUARIO = ["admin", "gestor_ti", "analista", "aprovador", "leitor"]
+PAPEL_USUARIO_LABELS = {
+    "admin": "Administrador", "gestor_ti": "Gestor de TI", "analista": "Analista",
+    "aprovador": "Aprovador", "leitor": "Leitor",
+}
 
 CATEGORIAS_SISTEMA = ["aplicacao", "infraestrutura", "licenca"]
 CATEGORIA_SISTEMA_LABELS = {

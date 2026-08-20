@@ -19,6 +19,8 @@ def create_app():
     from .api.ativos import bp as ativos_bp
     from .api.documentos import bp as documentos_bp
     from .api.dashboard import bp as dashboard_bp
+    from .api.usuarios import bp as usuarios_bp
+    from .api.areas import bp as areas_bp
 
     app.register_blueprint(meta_bp)
     app.register_blueprint(demandas_bp)
@@ -27,6 +29,8 @@ def create_app():
     app.register_blueprint(ativos_bp)
     app.register_blueprint(documentos_bp)
     app.register_blueprint(dashboard_bp)
+    app.register_blueprint(usuarios_bp)
+    app.register_blueprint(areas_bp)
 
     @app.get("/api/health")
     def health():
