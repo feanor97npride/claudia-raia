@@ -3,6 +3,7 @@ import { api } from '../api/client'
 import { useMeta } from '../hooks/useMeta'
 import { useToast } from '../hooks/useToast'
 import { RagBadge } from '../components/Badges'
+import ImportButton from '../components/ImportButton'
 import Modal from '../components/Modal'
 
 const BLANK = {
@@ -53,6 +54,12 @@ export default function ProjetosPage() {
           <div className="subtitle">Fase, criticidade e status RAG dos projetos em andamento.</div>
         </div>
         <div className="actions">
+          <ImportButton
+            endpoint="/projetos/import-planilha"
+            label="Importar planilha"
+            hint="Colunas: nome, descrição, fase, criticidade, status RAG, responsável (nome/e-mail já cadastrado), data início, data fim prevista"
+            onDone={() => { load(); reloadMeta() }}
+          />
           <button className="btn primary" onClick={() => setEditing({ ...BLANK })}>
             + Novo projeto
           </button>

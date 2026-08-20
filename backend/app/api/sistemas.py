@@ -2,6 +2,7 @@ from flask import Blueprint, jsonify, request
 
 from .. import constants as c
 from ..extensions import db
+from ..imports import find_usuario, get, parse_date_flex, read_rows, resolve_enum
 from ..models import Sistema, log_status
 from ..utils import error, parse_date
 
@@ -104,3 +105,63 @@ def delete_sistema(sistema_id):
     db.session.delete(item)
     db.session.commit()
     return "", 204
+
+
+@bp.post("/import-planilha")
+def import_planilha():
+    """Bulk-creates sistemas from an uploaded .xlsx/.csv. Expected columns:
+    nome, descricao (descrição), categoria, criticidade, ambiente, status_rag
+    (status rag), fornecedor, responsavel (responsável/owner — nome ou
+    e-mail, precisa já existir em Usuários), fim_suporte (data_fim_suporte,
+    eol)."""
+    upload = request.files.get("file")
+    if not upload:
+        return error("Envie um arquivo .xlsx ou .csv no campo 'file'.")
+    try:
+        rows = read_rows(upload)
+    except ValueError as exc:
+        return error(str(exc))
+
+    criados = 0
+    erros = []
+    avisos = []
+
+    for index, row in enumerate(rows, start=2):
+        nome = get(row, "nome", "sistema")
+        if not nome:
+            erros.append(f"Linha {index}: nome é obrigatório.")
+            continue
+
+        owner_ref = get(row, "responsavel", "responsável", "owner", "responsavel_email")
+        usuario = find_usuario(owner_ref)
+        if not usuario:
+            erros.append(
+                f"Linha {index} ({nome}): responsável '{owner_ref}' não encontrado. "
+                "Cadastre a pessoa em Usuários primeiro."
+            )
+            continue
+
+        item = Sistema(
+            nome=nome,
+            descricao=get(row, "descricao", "descrição"),
+            categoria=resolve_enum(get(row, "categoria"), c.CATEGORIAS_SISTEMA, c.CATEGORIA_SISTEMA_LABELS, default="aplicacao"),
+            criticidade=resolve_enum(get(row, "criticidade"), c.CRITICIDADES, c.CRITICIDADE_LABELS, default="media"),
+            ambiente=resolve_enum(get(row, "ambiente"), c.AMBIENTES_SISTEMA, default="producao"),
+            fornecedor=get(row, "fornecedor"),
+            owner_id=usuario.id,
+            status_rag=resolve_enum(
+                get(row, "status_rag", "status rag", "rag"), c.STATUS_RAG, c.STATUS_RAG_LABELS, default="green"
+            ),
+            data_fim_suporte=parse_date_flex(get(row, "fim_suporte", "data_fim_suporte", "fim de suporte", "eol")),
+        )
+        db.session.add(item)
+        db.session.flush()
+        log_status("sistema", item.id, item.status_rag, usuario_id=item.owner_id, nota="Criado via importação de planilha.")
+        criados += 1
+
+    if criados:
+        db.session.commit()
+    else:
+        db.session.rollback()
+
+    return jsonify({"criados": criados, "erros": erros, "avisos": avisos})

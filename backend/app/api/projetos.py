@@ -2,6 +2,7 @@ from flask import Blueprint, jsonify, request
 
 from .. import constants as c
 from ..extensions import db
+from ..imports import find_usuario, get, parse_date_flex, read_rows, resolve_enum
 from ..models import Area, Projeto, Sistema, log_status
 from ..utils import error, parse_date
 
@@ -101,3 +102,61 @@ def delete_projeto(projeto_id):
     db.session.delete(item)
     db.session.commit()
     return "", 204
+
+
+@bp.post("/import-planilha")
+def import_planilha():
+    """Bulk-creates projetos from an uploaded .xlsx/.csv. Expected columns:
+    nome, descricao (descrição), fase, criticidade, status_rag (status rag),
+    responsavel (responsável/owner — nome ou e-mail, precisa já existir em
+    Usuários), data_inicio (início), data_fim_prevista (fim previsto)."""
+    upload = request.files.get("file")
+    if not upload:
+        return error("Envie um arquivo .xlsx ou .csv no campo 'file'.")
+    try:
+        rows = read_rows(upload)
+    except ValueError as exc:
+        return error(str(exc))
+
+    criados = 0
+    erros = []
+    avisos = []
+
+    for index, row in enumerate(rows, start=2):
+        nome = get(row, "nome", "projeto")
+        if not nome:
+            erros.append(f"Linha {index}: nome é obrigatório.")
+            continue
+
+        owner_ref = get(row, "responsavel", "responsável", "owner", "responsavel_email")
+        usuario = find_usuario(owner_ref)
+        if not usuario:
+            erros.append(
+                f"Linha {index} ({nome}): responsável '{owner_ref}' não encontrado. "
+                "Cadastre a pessoa em Usuários primeiro."
+            )
+            continue
+
+        item = Projeto(
+            nome=nome,
+            descricao=get(row, "descricao", "descrição"),
+            fase=resolve_enum(get(row, "fase"), c.FASES_PROJETO, c.FASE_LABELS, default="planejamento"),
+            criticidade=resolve_enum(get(row, "criticidade"), c.CRITICIDADES, c.CRITICIDADE_LABELS, default="media"),
+            status_rag=resolve_enum(
+                get(row, "status_rag", "status rag", "rag"), c.STATUS_RAG, c.STATUS_RAG_LABELS, default="green"
+            ),
+            owner_id=usuario.id,
+            data_inicio=parse_date_flex(get(row, "data_inicio", "início", "inicio")),
+            data_fim_prevista=parse_date_flex(get(row, "data_fim_prevista", "fim previsto", "prazo")),
+        )
+        db.session.add(item)
+        db.session.flush()
+        log_status("projeto", item.id, item.status_rag, usuario_id=item.owner_id, nota="Criado via importação de planilha.")
+        criados += 1
+
+    if criados:
+        db.session.commit()
+    else:
+        db.session.rollback()
+
+    return jsonify({"criados": criados, "erros": erros, "avisos": avisos})

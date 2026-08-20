@@ -3,6 +3,7 @@ import { api } from '../api/client'
 import { useMeta } from '../hooks/useMeta'
 import { useToast } from '../hooks/useToast'
 import { RagBadge } from '../components/Badges'
+import ImportButton from '../components/ImportButton'
 import Modal from '../components/Modal'
 
 const BLANK = {
@@ -53,6 +54,12 @@ export default function SistemasPage() {
           <div className="subtitle">Catálogo de aplicações corporativas — base do inventário e das demandas.</div>
         </div>
         <div className="actions">
+          <ImportButton
+            endpoint="/sistemas/import-planilha"
+            label="Importar planilha"
+            hint="Colunas: nome, descrição, categoria, criticidade, ambiente, status RAG, fornecedor, responsável (nome/e-mail já cadastrado), fim de suporte"
+            onDone={() => { load(); reloadMeta() }}
+          />
           <button className="btn primary" onClick={() => setEditing({ ...BLANK })}>
             + Novo sistema
           </button>

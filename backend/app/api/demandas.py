@@ -4,7 +4,8 @@ from flask import Blueprint, jsonify, request
 
 from .. import constants as c
 from ..extensions import db
-from ..models import Demanda, log_status
+from ..imports import find_by_nome, find_usuario, get, parse_date_flex, read_rows, resolve_enum
+from ..models import Demanda, Projeto, Sistema, log_status
 from ..utils import error, parse_date
 
 bp = Blueprint("demandas", __name__, url_prefix="/api/demandas")
@@ -117,6 +118,96 @@ def delete_demanda(demanda_id):
     db.session.delete(item)
     db.session.commit()
     return "", 204
+
+
+@bp.post("/import-planilha")
+def import_planilha():
+    """Bulk-creates demandas from an uploaded .xlsx/.csv. Expected columns
+    (aliases in parentheses are also accepted): titulo (título), descricao
+    (descrição), prioridade, responsavel (responsável — nome ou e-mail,
+    precisa já existir em Usuários), projeto, sistema, prazo (data_prazo),
+    status."""
+    upload = request.files.get("file")
+    if not upload:
+        return error("Envie um arquivo .xlsx ou .csv no campo 'file'.")
+    try:
+        rows = read_rows(upload)
+    except ValueError as exc:
+        return error(str(exc))
+
+    criados = 0
+    erros = []
+    avisos = []
+    max_ordem_by_status = {}
+
+    for index, row in enumerate(rows, start=2):
+        titulo = get(row, "titulo", "título", "demanda")
+        if not titulo:
+            erros.append(f"Linha {index}: título é obrigatório.")
+            continue
+
+        responsavel_ref = get(row, "responsavel", "responsável", "responsavel_email", "email")
+        usuario = find_usuario(responsavel_ref)
+        if not usuario:
+            erros.append(
+                f"Linha {index} ({titulo}): responsável '{responsavel_ref}' não encontrado. "
+                "Cadastre a pessoa em Usuários primeiro."
+            )
+            continue
+
+        prioridade = resolve_enum(get(row, "prioridade"), c.PRIORIDADES, c.PRIORIDADE_LABELS, default="media")
+        status_kanban = resolve_enum(
+            get(row, "status", "status_kanban"), c.STATUS_KANBAN, c.STATUS_KANBAN_LABELS, default="nao_iniciado"
+        )
+
+        projeto_id = None
+        projeto_ref = get(row, "projeto", "projeto_nome")
+        if projeto_ref:
+            projeto = find_by_nome(Projeto, projeto_ref)
+            if projeto:
+                projeto_id = projeto.id
+            else:
+                avisos.append(f"Linha {index} ({titulo}): projeto '{projeto_ref}' não encontrado, campo deixado em branco.")
+
+        sistema_id = None
+        sistema_ref = get(row, "sistema", "sistema_nome")
+        if sistema_ref:
+            sistema = find_by_nome(Sistema, sistema_ref)
+            if sistema:
+                sistema_id = sistema.id
+            else:
+                avisos.append(f"Linha {index} ({titulo}): sistema '{sistema_ref}' não encontrado, campo deixado em branco.")
+
+        max_ordem = max_ordem_by_status.get(status_kanban)
+        if max_ordem is None:
+            max_ordem = db.session.query(db.func.max(Demanda.ordem_kanban)).filter_by(
+                status_kanban=status_kanban
+            ).scalar() or 0
+        max_ordem += 1
+        max_ordem_by_status[status_kanban] = max_ordem
+
+        item = Demanda(
+            titulo=titulo,
+            descricao=get(row, "descricao", "descrição"),
+            status_kanban=status_kanban,
+            prioridade=prioridade,
+            responsavel_id=usuario.id,
+            projeto_id=projeto_id,
+            sistema_id=sistema_id,
+            data_prazo=parse_date_flex(get(row, "prazo", "data_prazo", "data limite")),
+            ordem_kanban=max_ordem,
+        )
+        db.session.add(item)
+        db.session.flush()
+        log_status("demanda", item.id, item.status_kanban, usuario_id=item.responsavel_id, nota="Criada via importação de planilha.")
+        criados += 1
+
+    if criados:
+        db.session.commit()
+    else:
+        db.session.rollback()
+
+    return jsonify({"criados": criados, "erros": erros, "avisos": avisos})
 
 
 @bp.put("/kanban-batch")
