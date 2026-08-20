@@ -1,0 +1,18 @@
+{
+  "builds": [
+    {
+      "src": "Claudia Raia/app/app.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/static/(.*)",
+      "dest": "Claudia Raia/app/static/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "Claudia Raia/app/app.py"
+    }
+  ]
+}

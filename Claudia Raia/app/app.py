@@ -8,9 +8,11 @@ import charts
 import exports
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+IS_SERVERLESS = bool(os.environ.get("VERCEL"))
+DB_DIR = "/tmp" if IS_SERVERLESS else BASE_DIR
 
 app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{os.path.join(BASE_DIR, 'rag_tracker.db')}"
+app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{os.path.join(DB_DIR, 'rag_tracker.db')}"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.secret_key = "dev-rag-tracker-secret"
 
@@ -352,6 +354,9 @@ def export_all_pdf():
 
 with app.app_context():
     db.create_all()
+    if IS_SERVERLESS:
+        from seed import seed_data
+        seed_data()
 
 
 if __name__ == "__main__":

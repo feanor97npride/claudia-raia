@@ -1,7 +1,8 @@
 from datetime import date, timedelta
 from app import app, db, Item, StatusHistory
 
-with app.app_context():
+
+def seed_data():
     if Item.query.count() > 0:
         print("Banco já possui dados, seed ignorado.")
     else:
@@ -61,3 +62,8 @@ with app.app_context():
             db.session.add(StatusHistory(item_id=it.id, status=it.status, note="Item criado (seed).", changed_by=it.owner))
         db.session.commit()
         print(f"{len(items)} itens de exemplo criados.")
+
+
+if __name__ == "__main__":
+    with app.app_context():
+        seed_data()
