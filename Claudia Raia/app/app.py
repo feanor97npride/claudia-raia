@@ -1,13 +1,17 @@
 import os
+import sys
 from datetime import datetime, date
 
 from flask import Flask, render_template, request, redirect, url_for, flash, abort, send_file
 from flask_sqlalchemy import SQLAlchemy
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
+
 import charts
 import exports
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 IS_SERVERLESS = bool(os.environ.get("VERCEL"))
 DB_DIR = "/tmp" if IS_SERVERLESS else BASE_DIR
 
@@ -356,7 +360,7 @@ with app.app_context():
     db.create_all()
     if IS_SERVERLESS:
         from seed import seed_data
-        seed_data()
+        seed_data(db, Item, StatusHistory)
 
 
 if __name__ == "__main__":

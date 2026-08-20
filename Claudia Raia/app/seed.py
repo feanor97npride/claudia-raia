@@ -1,8 +1,7 @@
 from datetime import date, timedelta
-from app import app, db, Item, StatusHistory
 
 
-def seed_data():
+def seed_data(db, Item, StatusHistory):
     if Item.query.count() > 0:
         print("Banco já possui dados, seed ignorado.")
     else:
@@ -65,5 +64,6 @@ def seed_data():
 
 
 if __name__ == "__main__":
+    from app import app, db, Item, StatusHistory
     with app.app_context():
-        seed_data()
+        seed_data(db, Item, StatusHistory)
