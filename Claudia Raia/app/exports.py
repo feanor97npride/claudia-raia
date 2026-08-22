@@ -39,7 +39,12 @@ def _safe_sheet_title(title):
 
 def _write_items_sheet(wb, title, items):
     ws = wb.create_sheet(title=_safe_sheet_title(title))
-    headers = ["Status", "Nome", "Categoria", "Responsável", "Métrica", "Valor", "Meta", "Prazo", "Atualizado em", "Descrição"]
+    headers = [
+        "Status", "Nome", "Categoria", "Responsável", "Empresa", "Métrica", "Valor", "Meta",
+        "Prazo", "Atualizado em", "Descrição", "Tecnologia Impactada", "Área Impactada",
+        "Status do Plano", "Recebimento da Demanda", "Data Início", "Conclusão", "Plano de Ação",
+        "Ponto de Atenção",
+    ]
     ws.append(headers)
     for c in ws[1]:
         c.fill = HEADER_FILL
@@ -53,12 +58,21 @@ def _write_items_sheet(wb, title, items):
             it.name,
             it.category or "",
             it.owner or "",
+            it.company or "",
             it.metric_label or "",
             it.metric_value if it.metric_value is not None else "",
             it.metric_target if it.metric_target is not None else "",
             it.due_date.strftime("%d/%m/%Y") if it.due_date else "",
             it.updated_at.strftime("%d/%m/%Y %H:%M") if it.updated_at else "",
             it.description or "",
+            it.technology or "",
+            it.impact_area or "",
+            it.progress_status or "",
+            it.demand_date.strftime("%d/%m/%Y") if it.demand_date else "",
+            it.start_date.strftime("%d/%m/%Y") if it.start_date else "",
+            it.completion_date.strftime("%d/%m/%Y") if it.completion_date else "",
+            it.action_plan or "",
+            it.attention_note or "",
         ])
         row = ws.max_row
         fill = PatternFill(start_color=STATUS_HEX[it.status], end_color=STATUS_HEX[it.status], fill_type="solid")

@@ -36,6 +36,7 @@
       <th>Nome</th>
       <th>{{ meta.category_label }}</th>
       <th>Responsável</th>
+      {% if meta.has_impact_fields %}<th>Status do Plano</th>{% endif %}
       <th>{{ items[0].metric_label or meta.metric_label_default }}</th>
       {% if meta.has_due_date %}<th>Prazo</th>{% endif %}
       <th>Atualizado</th>
@@ -45,9 +46,10 @@
     {% for it in items %}
     <tr onclick="window.location='{{ url_for('item_detail', entity_type=entity_type, item_id=it.id) }}'" style="cursor:pointer;">
       <td>{{ m.status_badge(it.status) }}</td>
-      <td><strong>{{ it.name }}</strong></td>
+      <td><strong>{{ it.name }}</strong>{% if it.attention_note %} <span title="{{ it.attention_note }}">⚠️</span>{% endif %}</td>
       <td>{{ it.category or '—' }}</td>
       <td>{{ it.owner or '—' }}</td>
+      {% if meta.has_impact_fields %}<td>{{ it.progress_status or '—' }}</td>{% endif %}
       <td>
         {% if it.metric_value is not none %}
           {{ it.metric_value }}{% if it.metric_target is not none %} / {{ it.metric_target }}{% endif %}

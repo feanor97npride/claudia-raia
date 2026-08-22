@@ -48,12 +48,23 @@ def seed_data(db, Item, StatusHistory):
                  category="Alta", status="red",
                  description="Servidores legados sem suporte de segurança do fabricante.",
                  due_date=date.today() + timedelta(days=10),
-                 metric_label="Exposição", metric_value=8, metric_target=2),
+                 metric_label="Exposição", metric_value=8, metric_target=2,
+                 company="Matriz", technology="Windows Server 2012",
+                 impact_area="Infraestrutura", progress_status="Em andamento",
+                 demand_date=date.today() - timedelta(days=30),
+                 start_date=date.today() - timedelta(days=20),
+                 action_plan="Migrar servidores legados para Windows Server 2022 em lotes, "
+                              "priorizando os que hospedam sistemas críticos.",
+                 attention_note="Depende de janela de manutenção aprovada pelo negócio."),
             Item(entity_type="risks", name="Dependência de fornecedor único (backup)", owner="Time Infra",
                  category="Média", status="amber",
                  description="Solução de backup depende de um único fornecedor.",
                  due_date=date.today() + timedelta(days=90),
-                 metric_label="Exposição", metric_value=5, metric_target=2),
+                 metric_label="Exposição", metric_value=5, metric_target=2,
+                 company="Matriz", technology="Solução de Backup",
+                 impact_area="Infraestrutura", progress_status="Não iniciado",
+                 demand_date=date.today() - timedelta(days=5),
+                 action_plan="Avaliar segundo fornecedor de backup para redundância."),
         ]
         db.session.add_all(items)
         db.session.flush()

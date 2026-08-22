@@ -25,6 +25,11 @@
     </div>
 
     <div class="field">
+      <label>Empresa</label>
+      <input type="text" name="company" value="{{ item.company if item else '' }}" placeholder="Empresa / unidade de negócio">
+    </div>
+
+    <div class="field">
       <label>{{ meta.category_label }}</label>
       <select name="category">
         <option value="">—</option>
@@ -36,8 +41,55 @@
 
     {% if meta.has_due_date %}
     <div class="field">
-      <label>Prazo</label>
+      <label>Data Fim (prazo)</label>
       <input type="date" name="due_date" value="{{ item.due_date.isoformat() if item and item.due_date else '' }}">
+    </div>
+    {% endif %}
+
+    {% if meta.has_impact_fields %}
+    <div class="field">
+      <label>Tecnologia Impactada</label>
+      <input type="text" name="technology" value="{{ item.technology if item else '' }}">
+    </div>
+
+    <div class="field">
+      <label>Área Impactada</label>
+      <input type="text" name="impact_area" value="{{ item.impact_area if item else '' }}">
+    </div>
+
+    <div class="field">
+      <label>Status do Plano</label>
+      <select name="progress_status">
+        <option value="">—</option>
+        {% for opt in meta.progress_status_options %}
+        <option value="{{ opt }}" {{ 'selected' if item and item.progress_status == opt }}>{{ opt }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Recebimento da Demanda</label>
+      <input type="date" name="demand_date" value="{{ item.demand_date.isoformat() if item and item.demand_date else '' }}">
+    </div>
+
+    <div class="field">
+      <label>Data Início</label>
+      <input type="date" name="start_date" value="{{ item.start_date.isoformat() if item and item.start_date else '' }}">
+    </div>
+
+    <div class="field">
+      <label>Conclusão (data real)</label>
+      <input type="date" name="completion_date" value="{{ item.completion_date.isoformat() if item and item.completion_date else '' }}">
+    </div>
+
+    <div class="field full">
+      <label>Plano de Ação</label>
+      <textarea name="action_plan">{{ item.action_plan if item else '' }}</textarea>
+    </div>
+
+    <div class="field full">
+      <label>Ponto de Atenção</label>
+      <textarea name="attention_note">{{ item.attention_note if item else '' }}</textarea>
     </div>
     {% endif %}
 
